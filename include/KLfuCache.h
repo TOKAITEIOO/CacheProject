@@ -89,7 +89,27 @@ public:
     friend class KfuCache<Key, Value>;
 };
 
+template<typename Key, typename Value>
+class KfuCache : public KICachePolicy<Key, Value> {
+public:
+    using Node =  typename FreqList<Key, Value>::Node;
+    using NodePtr = std::shared_ptr<Node>;
+    using NodeMap = std::unordered_map<Key, NodePtr>;
 
+    KfuCache(int capacity, int maxAverageNum = 10)
+        : capacity_()
+    {}
+private:
+    int capacity_; // 缓存容量
+    int minFreq_; // 最小访问频次
+    int maxAverageNum_; // 最大平均访问频次
+    int curAverageNum_; // 当前平均访问频次
+    int curTotalNum_; // 当前访问所有缓存次数总数
+    std::mutex mutex_; // 互斥锁
+    NodeMap nodeMap_; // Key -> 缓存节点的映射
+    std::unordered_map<int, FreqList<Key, Value>*> freqToFreqList; // 访问频次到该频次链表的映射;
+
+};
 
 
 
