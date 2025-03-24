@@ -87,8 +87,18 @@ public:
     // 访问缓存数据
     int get(int key) {
         if (hashNode.find(key) != hashNode.end()) {
+            Node *node = hashNode[key]; // 利用节点哈希表，O(1)时间复杂度下定位到该节点
+            // 每次get操作会将该节点的访问频数+1,所以需要将它从原来的频数对应的双向链表中删除
+            deleteFromList(node);
+            node->freq++;
+            /*
+             * 下面这个操作是
+             *
+             * */
+
             return hashNode[key]->value;
         }
+
     }
 
 };
