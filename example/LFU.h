@@ -92,21 +92,43 @@ public:
             deleteFromList(node);
             node->freq++;
             /*
-             * 下面这个操作是
-             *
+             * 下面这个操作是为了防止当前node对应的最小频数是双向链表里的唯一节点
+             * 具体可以分为两种情况讨论
+             * （1）如果当前的node对应的是最小频数双向链表里的唯一节点，
+                那么在进行对其的get操作以后，它的频数freq++，原来双向链表的节点数目变为0
+                则最小频数minfreq++，即执行if操作
+             *  （2）如果当前node对应的不是最小频数的双向链表里的唯一节点，那么无需更新minfreq
              * */
-
-            return hashNode[key]->value;
+            if(hashFreq[minFreq]->L->next == hashFreq[minFreq]->R){
+                minFreq++;
+            }
+            append(node); // 加入新的频数对应的双向链表;
+            return node->value; // 返回该key对应的value值
         }
+        else return -1; // 缓存中不存在该key
+    }
 
+    // 更新缓存数据
+    void put(int key, int value) {
+        if (n == 0) return; // 缓存空间为0，不可以加入任何数据
+        if (get(key) != -1) {
+            //缓存中已经存在该key，复用一个get操作，就可以完成该节点对应的双向链表的更新
+            hashNode[key]->value = value;
+        } else {
+            // 缓存中不存在该key，则需要把新的节点插入到缓存空间里
+            if(hashNode.size() == n) {
+                Node *node = hashFreq[minFreq]->L->next; // 找到最小频数对应的双向链表的最久未使用的节点
+                deleteFromList(node); // 在双向链表中删除该节点
+                hashNode.erase(node->key); // 在节点哈希表中删除该节点
+            }
+            // 缓存空间未满和已满两种情况，均需要将新节点插入到缓存（双向链表和哈希表均需要插入）
+            Node *node = new Node(key, value, 1); // 构造新的节点，它的节点频数为1
+            hashNode[key] = node; // 插入节点的hash表
+            minFreq = 1; // 新插入的节点频数为1，故最小频数应该变为1
+            append(node); // 插入节点频数为1对应的双向链表中
+        }
     }
 
 };
-
-
-
-
-
-
 
 #endif //CACHEPROJECT_LFU_H
