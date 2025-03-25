@@ -97,8 +97,43 @@ public:
     using NodeMap = std::unordered_map<Key, NodePtr>;
 
     KfuCache(int capacity, int maxAverageNum = 10)
-        : capacity_()
+        : capacity_(capacity)
+        , minFreq_(INT8_MAX)
+        , maxAverageNum_(maxAverageNum)
+        , curAverageNum_(0)
+        , curTotalNum_(0)
     {}
+    ~KfuCache() override = default;
+    void put(Key key, Value value) override
+    {
+        if (capacity_ == 0) {
+            return;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto it = nodeMap_.find(key);
+        if (it != nodeMap_.end()) {
+            // 重置其value 值
+            it->second->value = value;
+            // 找到了直接调整，不用再将使用get中再找一遍，
+            getInternal(it->second, value);
+        }
+    }
+    bool get(Key key, Value& value) override {
+
+    }
+private:
+    void putInternal(Key key, Value value); // 添加缓存
+    void getInternal(NodePtr node, Value& value); // 获取缓存
+
+    void kickOut(); //移除缓存中的过期数据
+    void removeFromFreqList(NodePtr node); // 从频率列表中移除节点
+    void addToFreqList(NodePtr node); // 添加到频率列表中
+
+    void addFreqNum(); // 增加平均访问频率
+    void decreaseFreNum(); // 减少平均访问频率
+    void handleOverMaxAverage(); //处理当前平均访问频率超过上线的情况
+    void updateMinFreq();
+
 private:
     int capacity_; // 缓存容量
     int minFreq_; // 最小访问频次
@@ -111,8 +146,19 @@ private:
 
 };
 
+template<typename Key, typename Value>
+void KfuCache<Key, Value>::putInternal(Key key, Value value) {
+    // 如果不在缓存中，先判断缓存是否已经满了
+    if(nodeMap_.size() == capacity_) {
+        // 如果缓存已经满了，删除最不常访问的节点
+        kickOut();
+    }
+}
 
-
-
+template<typename Key, typename Value>
+void KfuCache<Key, Value>::kickOut() {
+    NodePtr node = freqToFreqList[minFreq_]->getFirstNode();
+    removeFromFreqList(node);
+}
 
 #endif //CACHEPROJECT_KLFUCACHE_H
